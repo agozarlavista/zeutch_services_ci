@@ -1,3 +1,4 @@
+<?php
 /* API LOGIN ZEUTCH */
 /* ____ ____ _  _ ____ ____ _  _ */
 /*    | |    |  |   |  |    |  | */
@@ -10,8 +11,6 @@
 /* l'api login est une api ouverte au service de l'application mobile zeutch basée sur codeigniter, les apis facebook twitter et les webservices landscapeviewer ressources privée */
 
 
-<?php
-
 class Login_api extends CI_Controller {
 
     public function __construct() {
@@ -19,41 +18,35 @@ class Login_api extends CI_Controller {
 
         header('Access-Control-Allow-Origin: *');
 
-        $this->load->model('mission_model');
-        $this->load->model('walker_model');
-        $this->load->model('apns_devices_model');
-        $this->load->model('gcm_devices_model');
-        $this->load->model('missionwalker_model');
-        $this->load->model('groupwalker_model');
-        $this->load->model('place_model');
-        $this->load->model('country_model');
-        $this->load->model('missionplace_model');
-        $this->load->model('photo_model');
-        $this->load->model('locales_model');
-        $this->load->model('cp_model');
-        $this->load->model('answer_model');
-        $this->load->model('further_model');
-        $this->load->model('tag_model');
-        $this->load->model('answertag_model');
-        $this->load->model('question_model');
-        $this->load->model('mission_model');
-        $this->load->model('quiz_model');
-        $this->load->model('question_model');
-        $this->load->model('dico_model');
-        $this->load->model('walker_devices_model');
-        $this->load->model('walker_positions_model');
-        $this->load->model('payments_history_model');
-        $this->load->library('email');
-        $this->load->helper('sort');
+        //$this->load->model('mz_zeutchers_model');
+        //$this->load->library('email');
+        /*$this->load->helper('sort');
         $this->load->helper('token');
         $this->load->helper('thumbnails');
         $this->load->helper('profilecheck');
-        $this->load->helper('translate_missions');
+        $this->load->helper('translate_missions');*/
         header('X-Frame-Options: DENY');
     }
     public function index(){
-        redirect('/', 'refresh');
+        echo "login";
+        //redirect('/', 'refresh');
         return true;
+    }
+    public function login(){
+        $array = $this->input->post();
+        if(isset($array['fb_id']))
+            $zeutcher = $this->zeutcher_model->get(array('fb_id' => $array['fb_id']));
+        else if(isset($array['tw_id']))
+            $zeutcher = $this->zeutcher_model->get(array('tw_id' => $array['tw_id']));
+        else
+            $zeutcher = $this->zeutcher_model->get(array('email' => $array['email'], 'pwd' => $array['pwd']));
+
+        echo json_encode($zeutcher);
+    }
+    public function subscribe(){
+        $array = $this->input->post();
+        $zeutcher = $this->zeutcher_model->add($array);
+        echo json_encode($zeutcher);
     }
     /* ----------------------- WEBSERVICE REQUEST ACCOUNT PRO ----------------------- */
     public function get_customer_infos_if_exist(){
@@ -280,56 +273,9 @@ class Login_api extends CI_Controller {
         }
         return '{"code":400}';
     }
+}
     /* ----------------------- END WEBSERVICE REQUEST ACCOUNT PRO ----------------------- */
 
-    public function validation($id, $token){
-        $this->load->model('walker_model');
-        $this->load->helper('url');
-        $this->load->model('customer_model');
-
-        $customer = $this->customer_model->get(array('id' => $id));
-        if(count($customer) != 1){
-            redirect('/admin_v3/login', 'refresh');
-            echo "compte utilisateur introuvable";
-            //exit;
-        }
-        //var_dump($customer);
-        if($customer->state == 1){
-            redirect('/admin_v3/login', 'refresh');
-            echo 'ce compte est déjà valide';
-            //exit;
-        }
-        echo $customer->id;
-        // on test le token sha1($id . $email . password);
-        if(sha1($id . $customer->email . $customer->password) == $token){
-            $data_mail = array(
-                'email' => $customer->email,
-                'user_id' => $customer->id,
-                'type'  => 'bank',
-                'validation' => 'true',
-                'user_type' => 'pro'
-            );
-
-            $this->load->model('email_model');
-            $this->email_model->send($data_mail);
-
-            //$this->send_an_email($data_mail);
-
-            $this->customer_model->update(array('id' => $customer->id, 'state' => '1'));
-            //echo 'update account state';
-        }else{
-            echo 'compte utilisateur invalid';
-            exit;
-        }
-        $walker = $this->walker_model->get(array('email' => $customer->email));
-        if(count($walker) != 1){
-            //echo "add walker";
-            $this->walker_model->add(array('email' => $customer->email, 'password' => $customer->password));
-        }else{
-            //echo $walker->id;
-        }
-        redirect('/admin_v3/login', 'refresh');
-    }
 
     /*public function send_an_email($data_mail){
         if(!isset($data_mail['email'])){
@@ -382,5 +328,5 @@ class Login_api extends CI_Controller {
         $this->email->message($html_message);
 
         $this->email->send();
-    }*/
+    }
 }
